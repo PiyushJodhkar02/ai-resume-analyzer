@@ -9,6 +9,8 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { useEffect, useState } from "react";
+import { usePuterStore } from "./lib/puter";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -24,6 +26,17 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  // This component renders on the server, but the store is client-side.
+  // We need to delay the initialization until the component has mounted in the browser.
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Always call the hook, but handle the conditional logic inside
+  usePuterInit(isMounted);
+  
   return (
     <html lang="en">
       <head>
@@ -33,12 +46,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
+        <script src="https://js.puter.com/v2/"></script>
         {children}
         <ScrollRestoration />
         <Scripts />
       </body>
     </html>
   );
+}
+
+function usePuterInit(isMounted: boolean) {
+  const { init } = usePuterStore();
+
+  useEffect(() => {
+    if (isMounted) {
+      init();
+    }
+  }, [init, isMounted]);
 }
 
 export default function App() {
